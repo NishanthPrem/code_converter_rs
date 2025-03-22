@@ -1,0 +1,10 @@
+[project]
+name = "code-converter-rs"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gradio>=5.22.0",
+    "ollama>=0.4.7",
+]

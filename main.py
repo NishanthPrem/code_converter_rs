@@ -1,13 +1,8 @@
 # Importing the libraries
 
-import os
 import io
 import sys
-import json
-import requests
-from dotenv import load_dotenv
 import ollama
-from IPython.display import Markdown, display, update_display
 import gradio as gr
 import subprocess
 
@@ -15,37 +10,37 @@ import subprocess
 
 OLLAMA_API = "http://localhost:11434/api/chat"
 HEADERS = {"Content-Type": "application/json"}
-MODEL = 'codellama:7b'
+MODEL = "codellama"
 
 # Setting the prompts
 
 system_message = "You are an assistant that reimplements Python code in Rust code."
-system_message += "Respond only with Rust code and don't give me any explainations."
+system_message += "Respond only with Rust code and don't give me any explanations."
 
-def user_prompt_for(python):
+
+def user_prompt_for(python_input):
     user_prompt = "Rewrite this Python code in Rust"
     user_prompt += "Respond only with Rust code. Do not explain. Add all the required imports and main function"
-    user_prompt += python
+    user_prompt += python_input
     return user_prompt
 
-def messages_for(python):
+
+def messages_for(python_input):
     return [
         {"role": "system", "content": system_message},
-        {"role": "user", "content": user_prompt_for(python)}
+        {"role": "user", "content": user_prompt_for(python_input)},
     ]
 
-def stream(python):
+
+def stream(python_input):
     # Stream response for Ollama
     full_response = ""
-    for chunk in ollama.chat(
-        model=MODEL, 
-        messages=messages_for(python),
-        stream=True
-    ):
-        if 'message' in chunk and 'content' in chunk['message']:
-            content = chunk['message']['content']
+    for chunk in ollama.chat(model=MODEL, messages=messages_for(python_input), stream=True):
+        if "message" in chunk and "content" in chunk["message"]:
+            content = chunk["message"]["content"]
             full_response += content
-            yield full_response.replace('```\n','').replace('```','')
+            yield full_response.replace("```\n", "").replace("```", "")
+
 
 def execute_python(code):
     try:
@@ -56,26 +51,32 @@ def execute_python(code):
         sys.stdout = sys.__stdout__
     return output.getvalue()
 
+
 def execute_rust(code):
     # Step 1: Write the Rust code to a file
     rust_file = "main.rs"
     with open(rust_file, "w") as f:
         f.write(code)
-    
+
     try:
         # Step 2: Compile the Rust code using rustc
-        compile_result = subprocess.run(["rustc", rust_file], check=True, text=True, capture_output=True)
-        
+        _ = subprocess.run(
+            ["rustc", rust_file], check=True, text=True, capture_output=True
+        )
+
         # Step 3: Execute the compiled binary
-        run_cmd = ["./main"]  # The default output binary name is "main" (or "main.exe" on Windows)
+        run_cmd = [
+            "./main"
+        ]  # The default output binary name is "main" (or "main.exe" on Windows)
         run_result = subprocess.run(run_cmd, check=True, text=True, capture_output=True)
-        
+
         # Step 4: Return the output of the executed binary
         return run_result.stdout
-    
+
     except subprocess.CalledProcessError as e:
         # Handle compilation or runtime errors
         return f"An error occurred:\n{e.stderr}"
+
 
 # Setting Up Gradio for the frontend
 
